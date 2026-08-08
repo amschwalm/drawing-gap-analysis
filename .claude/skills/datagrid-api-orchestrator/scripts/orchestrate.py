@@ -38,13 +38,18 @@ STALL_PATTERNS = [
     r"\bplease retry\b",
     r"\btry again\b",
     r"\bi (couldn't|could not|wasn't able to) (retrieve|access|find|get)\b",
+    r"\bunable to retrieve\b",
     r"\bdata gap\b",
-    r"\bframework\b.*\bschema\b",
+    r"\bframework\b",
     r"\bschema(s)? (only|retrieved|loaded)\b",
     r"\bno (real )?values?\b",
     r"\bnot (able|enough) to (complete|finish|execute)\b",
     r"\bre-?run\b",
     r"\bask me to continue\b",
+    r"\[pending\]",
+    r"\[placeholder",
+    r"\bto be determined\b",
+    r"\bto be populated\b",
 ]
 
 NUDGE = (
