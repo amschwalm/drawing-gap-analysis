@@ -124,6 +124,7 @@ class DatagridClient:
         self.max_retries = max_retries
         self._teamspace_raw = teamspace or os.environ.get("DATAGRID_TEAMSPACE")
         self._teamspace_id: Optional[str] = None
+        self._resolving_teamspace = False
         self._agent_cache: Dict[str, dict] = {}
         self._teamspace_cache: Dict[str, dict] = {}
 
@@ -135,15 +136,31 @@ class DatagridClient:
             return None
         if self._looks_like_id(raw):
             return raw
-        found = self.find_teamspace(raw)
+        if self._teamspace_id and (
+            teamspace is None or str(teamspace).strip().lower() == str(self._teamspace_raw or "").strip().lower()
+        ):
+            return self._teamspace_id
+        # Avoid recursion: name lookup itself must not send Datagrid-Teamspace.
+        if self._resolving_teamspace:
+            return None
+        self._resolving_teamspace = True
+        try:
+            found = self.find_teamspace(raw)
+        finally:
+            self._resolving_teamspace = False
         if not found:
             raise DatagridError(f"Teamspace not found by name: {raw!r}")
+        if teamspace is None or str(teamspace).strip().lower() == str(self._teamspace_raw or "").strip().lower():
+            self._teamspace_id = found["id"]
         return found["id"]
 
     @staticmethod
     def _looks_like_id(value: str) -> bool:
-        # Datagrid ids are typically uuid-like or prefixed opaque strings without spaces.
-        return " " not in value and len(value) >= 8 and ("-" in value or value.isalnum())
+        # UUID-ish ids; names usually contain spaces or are short words.
+        v = value.strip()
+        if " " in v or len(v) < 8:
+            return False
+        return "-" in v or v.replace("_", "").isalnum()
 
     def request(
         self,
@@ -158,6 +175,7 @@ class DatagridClient:
         headers: Optional[Dict[str, str]] = None,
         data: Optional[bytes] = None,
         content_type: Optional[str] = None,
+        skip_teamspace: bool = False,
     ) -> Any:
         if not path.startswith("/"):
             path = "/" + path
@@ -172,9 +190,11 @@ class DatagridClient:
             "Accept": "application/json",
             "User-Agent": "datagrid-api-orchestrator/1.0",
         }
-        ts = self._resolve_teamspace_header(teamspace)
-        if ts:
-            hdrs["Datagrid-Teamspace"] = ts
+        # Org-level listing used for name resolution should not require a teamspace header.
+        if not skip_teamspace and not self._resolving_teamspace:
+            ts = self._resolve_teamspace_header(teamspace)
+            if ts:
+                hdrs["Datagrid-Teamspace"] = ts
         if headers:
             hdrs.update(headers)
 
@@ -253,12 +273,19 @@ class DatagridClient:
         limit: int = 100,
         max_items: Optional[int] = None,
         cursor_param: str = "after",
+        skip_teamspace: bool = False,
     ) -> Iterator[dict]:
         params = dict(params or {})
         params.setdefault("limit", limit)
         yielded = 0
         while True:
-            page = self.request(method, path, params=params, teamspace=teamspace) or {}
+            page = self.request(
+                method,
+                path,
+                params=params,
+                teamspace=teamspace,
+                skip_teamspace=skip_teamspace,
+            ) or {}
             data = page.get("data") if isinstance(page, dict) else page
             if not isinstance(data, list):
                 return
@@ -267,16 +294,13 @@ class DatagridClient:
                 yielded += 1
                 if max_items is not None and yielded >= max_items:
                     return
-            nxt = None
-            if isinstance(page, dict):
-                nxt = page.get("next") or page.get("next_cursor") or (page.get("paging") or {}).get("next")
+            if not isinstance(page, dict):
+                return
+            nxt = page.get("next") or page.get("next_cursor") or (page.get("paging") or {}).get("next")
+            if not nxt and page.get("has_more") and data:
+                nxt = data[-1].get("id")
             if not nxt:
-                # some list endpoints use after from last id
-                if not data or "after" not in (params or {}) and cursor_param not in params:
-                    return
-                # if API returned no cursor, stop
-                if not (isinstance(page, dict) and (page.get("has_more") or page.get("next"))):
-                    return
+                return
             params = dict(params)
             params[cursor_param] = nxt
 
@@ -653,32 +677,39 @@ class DatagridClient:
     # ---- Teamspaces & users ------------------------------------------------
 
     def list_teamspaces(self, **params: Any) -> dict:
-        return self.request("GET", "/organization/teamspaces", params=params)
+        return self.request(
+            "GET", "/organization/teamspaces", params=params, skip_teamspace=True
+        )
 
     def get_teamspace(self, tid: str) -> dict:
-        return self.request("GET", f"/organization/teamspaces/{tid}")
+        return self.request("GET", f"/organization/teamspaces/{tid}", skip_teamspace=True)
 
     def create_teamspace(self, **body: Any) -> dict:
-        return self.request("POST", "/organization/teamspaces", body=body)
+        return self.request("POST", "/organization/teamspaces", body=body, skip_teamspace=True)
 
     def update_teamspace(self, tid: str, **body: Any) -> dict:
-        return self.request("PATCH", f"/organization/teamspaces/{tid}", body=body)
+        return self.request(
+            "PATCH", f"/organization/teamspaces/{tid}", body=body, skip_teamspace=True
+        )
 
     def find_teamspace(self, name: str) -> Optional[dict]:
         key = name.strip().lower()
         if key in self._teamspace_cache:
             return self._teamspace_cache[key]
-        page = self.list_teamspaces(limit=100) or {}
-        for t in page.get("data") or []:
-            tname = (t.get("name") or "").strip()
-            self._teamspace_cache[tname.lower()] = t
-            if tname.lower() == key:
-                return t
-        for t in self.paginate("GET", "/organization/teamspaces", limit=100, max_items=500):
-            tname = (t.get("name") or "").strip()
-            self._teamspace_cache[tname.lower()] = t
-            if tname.lower() == key:
-                return t
+        after = None
+        while True:
+            page = self.list_teamspaces(limit=100, after=after) or {}
+            for t in page.get("data") or []:
+                tname = (t.get("name") or "").strip()
+                self._teamspace_cache[tname.lower()] = t
+                if tname.lower() == key:
+                    return t
+            data = page.get("data") or []
+            if not page.get("has_more") or not data:
+                break
+            after = data[-1].get("id")
+            if not after:
+                break
         return None
 
     def list_teamspace_users(self, tid: str, **params: Any) -> dict:
