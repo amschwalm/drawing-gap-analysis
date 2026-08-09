@@ -35,6 +35,7 @@ do not bury them here:
 
 - [`drawing-geometric-analysis`](../drawing-geometric-analysis) — within-sheet geometry
 - [`cross-sheet-coordination`](../cross-sheet-coordination) — between-sheet callouts / interfaces
+- [`drawing-scaling`](../drawing-scaling) — calibrate scale; measure rooms / distances / LF
 
 ## Setup (do this first)
 

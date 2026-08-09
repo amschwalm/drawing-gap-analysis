@@ -100,6 +100,7 @@ attach the sheet file. One sheet per call. Prefer concurrency via
 | Auth, teamspaces, explore, generic concurrent converse | `datagrid-api-orchestrator` |
 | Within-sheet geometry / dimensions | **this skill** |
 | Between-sheet callouts & plan↔section interfaces | [`cross-sheet-coordination`](../cross-sheet-coordination) |
+| Calibrated size / distance / LF takeoff | [`drawing-scaling`](../drawing-scaling) |
 
 Do not bury geometry methodology inside the generic Datagrid orchestrator —
 attach **this** skill to the drawing agent workflow instead.
