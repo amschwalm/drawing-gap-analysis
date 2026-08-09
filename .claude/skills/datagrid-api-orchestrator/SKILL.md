@@ -30,9 +30,11 @@ datagrid-api-orchestrator/
     └── recipes.md           # a concrete action for every endpoint group
 ```
 
-For **drawing geometry / dimension conflict analysis**, attach the sibling skill
-[`drawing-geometric-analysis`](../drawing-geometric-analysis) to the drawing
-agent — do not bury geometry methodology here.
+For drawing-domain methodology, attach sibling skills to the drawing agent —
+do not bury them here:
+
+- [`drawing-geometric-analysis`](../drawing-geometric-analysis) — within-sheet geometry
+- [`cross-sheet-coordination`](../cross-sheet-coordination) — between-sheet callouts / interfaces
 
 ## Setup (do this first)
 
