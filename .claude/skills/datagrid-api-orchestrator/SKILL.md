@@ -24,6 +24,8 @@ datagrid-api-orchestrator/
 │   ├── datagrid_client.py   # client wrapping EVERY endpoint (import or CLI)
 │   ├── explore.py           # STAGE 1: profile a teamspace (all knowledge + AI search sweep)
 │   ├── orchestrate.py       # STAGE 3: concurrent runner: parallel prompts + retries
+│   ├── geometry_pass.py     # hardcoded geometry-only prompt helpers
+│   ├── sheet_two_pass.py    # supplementary two-pass sheet runner (agent + geometry)
 │   └── .env.example         # copy to .env and add your key (never commit the real key)
 └── references/
     ├── endpoints.md         # every endpoint: method, path, purpose, doc link
