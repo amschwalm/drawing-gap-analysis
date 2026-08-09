@@ -6,5 +6,6 @@ Construction drawing gap analysis agent workspace.
 
 - [`.claude/skills/datagrid-api-orchestrator`](.claude/skills/datagrid-api-orchestrator) — Datagrid API orchestrator (explore → targeted prompts → concurrent dispatch).
 - [`.claude/skills/drawing-geometric-analysis`](.claude/skills/drawing-geometric-analysis) — Geometry-first drawing sheet analysis; attach to drawing agents (e.g. Drawing Revision Reviewer).
+- [`.claude/skills/cross-sheet-coordination`](.claude/skills/cross-sheet-coordination) — Between-sheet callouts / plan↔section / discipline interface checks.
 
 Cursor also loads skills from `.claude/skills/`.
