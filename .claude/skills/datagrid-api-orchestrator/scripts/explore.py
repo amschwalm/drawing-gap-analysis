@@ -185,7 +185,7 @@ def _render_md(profile: dict) -> str:
         "the real documents/tables above, then run:",
         "",
         "```bash",
-        "python scripts/orchestrate.py --jobs <out>/jobs_template.json --out results --concurrency 6",
+        "python scripts/orchestrate.py --jobs <out>/jobs_template.json --out results --concurrency 16",
         "```",
         "",
     ]

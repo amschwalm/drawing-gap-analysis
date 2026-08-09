@@ -37,6 +37,10 @@ datagrid-api-orchestrator/
     └── recipes.md           # a copy/paste snippet per endpoint group
 ```
 
+Geometry-first sheet review lives in the sibling skill
+[`drawing-geometric-analysis`](../drawing-geometric-analysis) — attach that to
+drawing agents (e.g. Drawing Revision Reviewer).
+
 ## 2. Add your API key
 
 Get a key from the Datagrid dashboard → **Settings → API keys**, then:
@@ -100,7 +104,7 @@ Read `profile/profile.md`, then fill the `prompt` fields in
 **Run many prompts concurrently:**
 
 ```bash
-python scripts/orchestrate.py --jobs profile/jobs_template.json --out results --concurrency 6
+python scripts/orchestrate.py --jobs profile/jobs_template.json --out results --concurrency 16
 ```
 
 **Or fan a single prompt across several agents:**
@@ -110,18 +114,18 @@ python scripts/orchestrate.py \
   --agents "Agent A,Agent B" \
   --prompt "summarize the top risks in this project" \
   --teamspace "My Teamspace" \
-  --out results --concurrency 6
+  --out results --concurrency 16
 ```
 
 Each job writes `results/<tag>.md` + `.json` the moment it finishes, plus a
-`results/SUMMARY.md` table.
+`results/SUMMARY.md` table. Default concurrency is **16**.
 
 **For long runs, launch detached** so a short foreground timeout can't kill an
 agent mid-run, then watch the output files:
 
 ```bash
 nohup python scripts/orchestrate.py --jobs profile/jobs_template.json \
-  --out results --concurrency 6 > results/run.log 2>&1 &
+  --out results --concurrency 16 > results/run.log 2>&1 &
 ```
 
 ---
