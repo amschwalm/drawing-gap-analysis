@@ -16,7 +16,7 @@ Job schema (JSON list):
   }
 
 Examples:
-  python orchestrate.py --jobs jobs.json --out results --concurrency 6
+  python orchestrate.py --jobs jobs.json --out results --concurrency 16
   python orchestrate.py --agents "A,B" --prompt "..." --teamspace "TS" --out results
 """
 
@@ -269,7 +269,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--prompt", help="Single prompt to fan across --agents")
     p.add_argument("--teamspace", default=None, help="Default teamspace name or id")
     p.add_argument("--out", default="results", help="Output directory")
-    p.add_argument("--concurrency", type=int, default=6)
+    p.add_argument("--concurrency", type=int, default=16)
     p.add_argument("--max-retries", type=int, default=2)
     args = p.parse_args(argv)
 
