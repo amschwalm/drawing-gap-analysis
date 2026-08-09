@@ -168,10 +168,10 @@ def build_prompt_with_files(
             file_ids.append(str(fid))
     if not file_ids:
         return text_prompt
-    items: List[Dict[str, Any]] = [{"type": "input_text", "text": text_prompt}]
+    content: List[Dict[str, Any]] = [{"type": "input_text", "text": text_prompt}]
     for fid in file_ids:
-        items.append({"type": "input_file", "file_id": fid})
-    return items
+        content.append({"type": "input_file", "file_id": fid})
+    return [{"role": "user", "content": content}]
 
 
 def iter_sheets(job: Mapping[str, Any]) -> List[Dict[str, Any]]:

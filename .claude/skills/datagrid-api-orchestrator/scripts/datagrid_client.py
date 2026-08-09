@@ -619,11 +619,22 @@ class DatagridClient:
         return self.request("GET", "/files", params=params)
 
     def create_files(self, file_paths: List[str], teamspace: Optional[str] = None) -> dict:
-        files = [("files", p) for p in file_paths]
-        ctype, data = _encode_multipart({}, files)
-        return self.request(
-            "POST", "/files", data=data, content_type=ctype, teamspace=teamspace
-        )
+        # API expects multipart field name "file" (singular). Upload one-by-one
+        # when multiple paths are provided so each part uses the correct field.
+        if len(file_paths) == 1:
+            ctype, data = _encode_multipart({}, [("file", file_paths[0])])
+            return self.request(
+                "POST", "/files", data=data, content_type=ctype, teamspace=teamspace
+            )
+        results = []
+        for path in file_paths:
+            ctype, data = _encode_multipart({}, [("file", path)])
+            results.append(
+                self.request(
+                    "POST", "/files", data=data, content_type=ctype, teamspace=teamspace
+                )
+            )
+        return {"object": "list", "data": results}
 
     def get_file(self, fid: str) -> dict:
         return self.request("GET", f"/files/{fid}")
