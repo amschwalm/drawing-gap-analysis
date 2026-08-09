@@ -147,6 +147,11 @@ def build_prompt_with_file(
     if not file_id:
         return text_prompt
     return [
-        {"type": "input_text", "text": text_prompt},
-        {"type": "input_file", "file_id": file_id},
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": text_prompt},
+                {"type": "input_file", "file_id": file_id},
+            ],
+        }
     ]

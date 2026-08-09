@@ -222,7 +222,7 @@ def _write_result(out_dir: Path, result: dict) -> None:
         "",
         "## Prompt",
         "",
-        result.get("prompt") or "",
+        (result.get("prompt") if isinstance(result.get("prompt"), str) else json.dumps(result.get("prompt"), indent=2, default=str)) or "",
         "",
         "## Response",
         "",

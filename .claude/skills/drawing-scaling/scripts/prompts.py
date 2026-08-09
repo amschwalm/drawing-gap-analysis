@@ -169,12 +169,17 @@ def build_prompt_with_file(
     text_prompt: str,
     file_id: Optional[str] = None,
 ) -> Any:
-    """Return converse prompt: plain string, or input item list with file attach."""
+    """Return converse prompt: plain string, or message with file attach."""
     if not file_id:
         return text_prompt
     return [
-        {"type": "input_text", "text": text_prompt},
-        {"type": "input_file", "file_id": file_id},
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": text_prompt},
+                {"type": "input_file", "file_id": file_id},
+            ],
+        }
     ]
 
 
@@ -185,10 +190,10 @@ def build_prompt_with_files(
     ids = [str(f) for f in file_ids if f]
     if not ids:
         return text_prompt
-    items: List[Dict[str, Any]] = [{"type": "input_text", "text": text_prompt}]
+    content: List[Dict[str, Any]] = [{"type": "input_text", "text": text_prompt}]
     for fid in ids:
-        items.append({"type": "input_file", "file_id": fid})
-    return items
+        content.append({"type": "input_file", "file_id": fid})
+    return [{"role": "user", "content": content}]
 
 
 def dumps_targets_preview(sheet: Mapping[str, Any]) -> str:

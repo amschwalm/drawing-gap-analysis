@@ -42,8 +42,13 @@ r3 = c.converse("extract part number and quantity for each line item", agent_id=
                           "part":{"type":"string"},"qty":{"type":"number"}}}}}}}})
 
 # attach a file / knowledge / page as input (array prompt):
-r4 = c.converse([{"type":"input_text","text":"Summarize this document"},
-                 {"type":"input_file","file_id":file_id}], agent_id=agent_id, teamspace=ts)
+r4 = c.converse([{
+                     "role":"user",
+                     "content":[
+                         {"type":"input_text","text":"Summarize this document"},
+                         {"type":"input_file","file_id":file_id},
+                     ],
+                 }], agent_id=agent_id, teamspace=ts)
 ```
 For bulk/parallel converse use `orchestrate.py` (handles concurrency + retry-on-stall).
 
