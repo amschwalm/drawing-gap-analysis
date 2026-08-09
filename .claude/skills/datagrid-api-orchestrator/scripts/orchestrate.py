@@ -16,7 +16,7 @@ Job schema (JSON list):
   }
 
 Examples:
-  python orchestrate.py --jobs jobs.json --out results --concurrency 6
+  python orchestrate.py --jobs jobs.json --out results --concurrency 16
   python orchestrate.py --agents "A,B" --prompt "..." --teamspace "TS" --out results
 """
 
@@ -38,13 +38,18 @@ STALL_PATTERNS = [
     r"\bplease retry\b",
     r"\btry again\b",
     r"\bi (couldn't|could not|wasn't able to) (retrieve|access|find|get)\b",
+    r"\bunable to retrieve\b",
     r"\bdata gap\b",
-    r"\bframework\b.*\bschema\b",
+    r"\bframework\b",
     r"\bschema(s)? (only|retrieved|loaded)\b",
     r"\bno (real )?values?\b",
     r"\bnot (able|enough) to (complete|finish|execute)\b",
     r"\bre-?run\b",
     r"\bask me to continue\b",
+    r"\[pending\]",
+    r"\[placeholder",
+    r"\bto be determined\b",
+    r"\bto be populated\b",
 ]
 
 NUDGE = (
@@ -264,7 +269,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--prompt", help="Single prompt to fan across --agents")
     p.add_argument("--teamspace", default=None, help="Default teamspace name or id")
     p.add_argument("--out", default="results", help="Output directory")
-    p.add_argument("--concurrency", type=int, default=6)
+    p.add_argument("--concurrency", type=int, default=16)
     p.add_argument("--max-retries", type=int, default=2)
     args = p.parse_args(argv)
 

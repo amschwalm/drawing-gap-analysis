@@ -31,6 +31,8 @@ datagrid-api-orchestrator/
 │   ├── datagrid_client.py   # API client wrapping every endpoint
 │   ├── explore.py           # profile a teamspace
 │   ├── orchestrate.py       # concurrent prompt runner + retries
+│   ├── geometry_pass.py     # hardcoded geometry-only prompt helpers
+│   ├── sheet_two_pass.py    # two-pass sheet runner (agent + geometry)
 │   └── .env.example         # copy to .env and add your key
 └── references/
     ├── endpoints.md         # every endpoint (method, path, purpose)
@@ -100,7 +102,7 @@ Read `profile/profile.md`, then fill the `prompt` fields in
 **Run many prompts concurrently:**
 
 ```bash
-python scripts/orchestrate.py --jobs profile/jobs_template.json --out results --concurrency 6
+python scripts/orchestrate.py --jobs profile/jobs_template.json --out results --concurrency 16
 ```
 
 **Or fan a single prompt across several agents:**
@@ -110,18 +112,18 @@ python scripts/orchestrate.py \
   --agents "Agent A,Agent B" \
   --prompt "summarize the top risks in this project" \
   --teamspace "My Teamspace" \
-  --out results --concurrency 6
+  --out results --concurrency 16
 ```
 
 Each job writes `results/<tag>.md` + `.json` the moment it finishes, plus a
-`results/SUMMARY.md` table.
+`results/SUMMARY.md` table. Default concurrency is **16**.
 
 **For long runs, launch detached** so a short foreground timeout can't kill an
 agent mid-run, then watch the output files:
 
 ```bash
 nohup python scripts/orchestrate.py --jobs profile/jobs_template.json \
-  --out results --concurrency 6 > results/run.log 2>&1 &
+  --out results --concurrency 16 > results/run.log 2>&1 &
 ```
 
 ---

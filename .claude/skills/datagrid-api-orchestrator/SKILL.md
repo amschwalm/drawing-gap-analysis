@@ -24,6 +24,8 @@ datagrid-api-orchestrator/
 │   ├── datagrid_client.py   # client wrapping EVERY endpoint (import or CLI)
 │   ├── explore.py           # STAGE 1: profile a teamspace (all knowledge + AI search sweep)
 │   ├── orchestrate.py       # STAGE 3: concurrent runner: parallel prompts + retries
+│   ├── geometry_pass.py     # hardcoded geometry-only prompt helpers
+│   ├── sheet_two_pass.py    # supplementary two-pass sheet runner (agent + geometry)
 │   └── .env.example         # copy to .env and add your key (never commit the real key)
 └── references/
     ├── endpoints.md         # every endpoint: method, path, purpose, doc link
@@ -81,7 +83,7 @@ judgment step best done by the model running this skill.
 
 **Stage 3 — Dispatch concurrently (automated).**
 ```bash
-python scripts/orchestrate.py --jobs profile/jobs_template.json --out results --concurrency 6
+python scripts/orchestrate.py --jobs profile/jobs_template.json --out results --concurrency 16
 ```
 Runs every prompt in parallel with retry-on-stall; writes `results/<tag>.md/.json`
 and `results/SUMMARY.md`.
@@ -100,20 +102,21 @@ python scripts/orchestrate.py \
   --agents "Agent A,Agent B" \
   --prompt "analyze the project and summarize the top risks" \
   --teamspace "My Teamspace" \
-  --out results --concurrency 6
+  --out results --concurrency 16
 ```
 
 **Run a batch of distinct jobs (recommended)** — write a `jobs.json` list, then:
 ```bash
-python scripts/orchestrate.py --jobs jobs.json --out results --concurrency 6
+python scripts/orchestrate.py --jobs jobs.json --out results --concurrency 16
 ```
 Each job: `{"tag","agent"|"agent_id","prompt","teamspace"?,"conversation_id"?,"max_retries"?}`.
 See the header of `orchestrate.py` for the full job schema. Output: `results/<tag>.md`
 + `.json` per job and a `results/SUMMARY.md` table (tools, retries, stalled?,
 credits, chars).
 
-Concurrency guidance: 4–8 is a good default. Higher risks 429s (the client backs
-off automatically, but throughput won't improve much past the rate limit).
+Concurrency guidance: **16** is the default for large fan-outs (e.g. one job per
+drawing sheet). Lower to 8 if you see sustained 429s; the client backs off
+automatically, but throughput won't improve much past the rate limit.
 
 ## Retry-on-stall (built in — keep it on)
 
@@ -200,7 +203,7 @@ timeouts can cut them off; handle both:
    open in a short-timeout foreground call:
    ```bash
    nohup python scripts/orchestrate.py --jobs profile/jobs_template.json \
-     --out results --concurrency 6 > results/run.log 2>&1 &
+     --out results --concurrency 16 > results/run.log 2>&1 &
    ```
    Then watch `results/run.log` and the per-job `results/<tag>.json` files as they
    appear. Because each job writes the moment it finishes, a slow agent never
