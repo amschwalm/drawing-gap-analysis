@@ -93,12 +93,13 @@ prompt from `build_geometry_prompt(...)` (or the template in `prompts.py`) and
 attach the sheet file. One sheet per call. Prefer concurrency via
 `analyze_sheets.py` for batches.
 
-## Relationship to datagrid-api-orchestrator
+## Relationship to other skills
 
 | Concern | Skill |
 | --- | --- |
 | Auth, teamspaces, explore, generic concurrent converse | `datagrid-api-orchestrator` |
-| Geometry checklist, geometry prompts, sheet two-pass / geometry runner | **this skill** |
+| Within-sheet geometry / dimensions | **this skill** |
+| Between-sheet callouts & plan↔section interfaces | [`cross-sheet-coordination`](../cross-sheet-coordination) |
 
 Do not bury geometry methodology inside the generic Datagrid orchestrator —
 attach **this** skill to the drawing agent workflow instead.
