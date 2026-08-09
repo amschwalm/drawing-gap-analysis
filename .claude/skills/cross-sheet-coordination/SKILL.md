@@ -89,3 +89,4 @@ referenced sheet is absent or illegible.
 | Datagrid API / concurrency | `datagrid-api-orchestrator` |
 | Within-sheet geometry / dimensions | `drawing-geometric-analysis` |
 | Between-sheet callouts & interfaces | **this skill** |
+| Calibrated size / distance / LF takeoff | [`drawing-scaling`](../drawing-scaling) |
