@@ -31,13 +31,15 @@ datagrid-api-orchestrator/
 │   ├── datagrid_client.py   # API client wrapping every endpoint
 │   ├── explore.py           # profile a teamspace
 │   ├── orchestrate.py       # concurrent prompt runner + retries
-│   ├── geometry_pass.py     # hardcoded geometry-only prompt helpers
-│   ├── sheet_two_pass.py    # two-pass sheet runner (agent + geometry)
 │   └── .env.example         # copy to .env and add your key
 └── references/
     ├── endpoints.md         # every endpoint (method, path, purpose)
     └── recipes.md           # a copy/paste snippet per endpoint group
 ```
+
+Geometry-first sheet review lives in the sibling skill
+[`drawing-geometric-analysis`](../drawing-geometric-analysis) — attach that to
+drawing agents (e.g. Drawing Revision Reviewer).
 
 ## 2. Add your API key
 

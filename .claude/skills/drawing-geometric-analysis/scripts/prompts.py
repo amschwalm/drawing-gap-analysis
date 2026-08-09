@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Hardcoded geometry-validation pass for drawing sheet reviews.
+"""Prompt builders for drawing geometric analysis.
 
-Supplementary to a Datagrid drawing agent: use after (or beside) the agent's
-native review to force a graphics/dimension-focused second pass.
+Attach this skill to a drawing agent, then use these builders (or analyze_sheets.py)
+to force a graphics/dimension-focused pass.
 """
 
 from __future__ import annotations
@@ -132,7 +132,7 @@ def build_geometry_prompt(
     project_scope: str = "",
     template: Optional[str] = None,
 ) -> str:
-    """Build the hardcoded geometry-only (pass 2) prompt for one sheet."""
+    """Build the geometry-only prompt for one sheet (attach this skill's core pass)."""
     fields = _sheet_fields(sheet, project_scope)
     if sheet.get("geometry_prompt"):
         return str(sheet["geometry_prompt"]).format(**fields)

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Two-pass drawing sheet analysis helper (supplementary, not a full agent).
+"""Concurrent geometry / two-pass drawing sheet analysis.
 
-Pass 1 — Datagrid agent native review (whatever the agent is built to do).
-Pass 2 — Hardcoded geometry-only validation (see geometry_pass.py).
+This skill attaches geometry methodology to a Datagrid drawing agent.
+Transport comes from sibling skill datagrid-api-orchestrator.
 
 Sheet list JSON (array):
   {
@@ -19,16 +19,17 @@ Sheet list JSON (array):
   }
 
 Examples:
-  python sheet_two_pass.py \\
+  python analyze_sheets.py \\
     --sheets sheets.json \\
     --agent "Drawing Revision Reviewer" \\
     --teamspace "KSA Demo" \\
     --project-scope "5150 El Camino Real / The Harken Apartments" \\
-    --out results_two_pass --concurrency 16
+    --geometry-only \\
+    --out results_geometry --concurrency 16
 
-  # geometry pass only
-  python sheet_two_pass.py --sheets sheets.json --agent-id ID --teamspace TS \\
-    --geometry-only --out results_geom
+  # agent-native + geometry
+  python analyze_sheets.py --sheets sheets.json --agent NAME --teamspace TS \\
+    --out results_two_pass
 """
 
 from __future__ import annotations
@@ -43,8 +44,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from datagrid_client import DatagridClient, DatagridError
-from geometry_pass import (
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILLS_DIR = SCRIPT_DIR.parents[1]
+ORCH_SCRIPTS = SKILLS_DIR / "datagrid-api-orchestrator" / "scripts"
+if str(ORCH_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(ORCH_SCRIPTS))
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from datagrid_client import DatagridClient, DatagridError  # noqa: E402
+from prompts import (  # noqa: E402
     build_geometry_prompt,
     build_pass1_prompt,
     build_prompt_with_file,
@@ -63,7 +72,12 @@ def _sheet_tag(sheet: Dict[str, Any]) -> str:
     return _slug(f"asheet_{num}")
 
 
-def _resolve_agent_id(client: DatagridClient, job: Dict[str, Any], default_agent: Optional[str], default_id: Optional[str]) -> str:
+def _resolve_agent_id(
+    client: DatagridClient,
+    job: Dict[str, Any],
+    default_agent: Optional[str],
+    default_id: Optional[str],
+) -> str:
     if job.get("agent_id") or default_id:
         return str(job.get("agent_id") or default_id)
     name = job.get("agent") or default_agent
@@ -126,7 +140,7 @@ def analyze_sheet_two_pass(
     continue_conversation: bool = False,
     chat_mode: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Run pass-1 agent review + pass-2 geometry validation for one sheet."""
+    """Run optional pass-1 agent review + geometry validation for one sheet."""
     tag = _sheet_tag(sheet)
     number = sheet.get("number") or sheet.get("sheet")
     if not number:
@@ -229,7 +243,7 @@ def _write_result(out_dir: Path, result: Dict[str, Any]) -> None:
 
 def _write_summary(out_dir: Path, results: List[Dict[str, Any]]) -> None:
     lines = [
-        "# Two-pass sheet analysis summary",
+        "# Drawing geometric analysis summary",
         "",
         f"Sheets: {len(results)}",
         "",
@@ -255,7 +269,7 @@ def _write_summary(out_dir: Path, results: List[Dict[str, Any]]) -> None:
 
 def main(argv: Optional[List[str]] = None) -> int:
     p = argparse.ArgumentParser(
-        description="Two-pass drawing sheet analysis (agent native + geometry)"
+        description="Drawing geometric analysis (geometry-only or two-pass)"
     )
     p.add_argument("--sheets", required=True, help="JSON list of sheet objects")
     p.add_argument("--agent", default=None, help="Datagrid agent name")
@@ -264,14 +278,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument(
         "--project-scope",
         default="",
-        help="Project scope sentence injected into both prompts",
+        help="Project scope sentence injected into prompts",
     )
     p.add_argument(
         "--knowledge-ids",
         default="",
-        help="Comma-separated knowledge ids attached to both passes",
+        help="Comma-separated knowledge ids attached to passes",
     )
-    p.add_argument("--out", default="results_two_pass", help="Output directory")
+    p.add_argument("--out", default="results_geometry", help="Output directory")
     p.add_argument("--concurrency", type=int, default=16)
     p.add_argument(
         "--continue-conversation",
@@ -281,7 +295,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument(
         "--geometry-only",
         action="store_true",
-        help="Skip pass 1; run hardcoded geometry validation only",
+        help="Skip pass 1; run geometry validation only (typical when this skill is attached)",
     )
     p.add_argument(
         "--pass1-only",
@@ -293,6 +307,14 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.geometry_only and args.pass1_only:
         print("Choose only one of --geometry-only / --pass1-only", file=sys.stderr)
+        return 2
+
+    if not ORCH_SCRIPTS.is_dir():
+        print(
+            f"Missing sibling skill scripts at {ORCH_SCRIPTS}. "
+            "Install datagrid-api-orchestrator beside this skill.",
+            file=sys.stderr,
+        )
         return 2
 
     sheets = json.loads(Path(args.sheets).read_text(encoding="utf-8"))
@@ -326,7 +348,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
 
     print(
-        f"Two-pass analysis: {len(sheets)} sheet(s), concurrency={args.concurrency}, "
+        f"Geometric analysis: {len(sheets)} sheet(s), concurrency={args.concurrency}, "
         f"pass1={'off' if args.geometry_only else 'on'}, "
         f"geometry={'off' if args.pass1_only else 'on'}"
     )
@@ -348,7 +370,11 @@ def main(argv: Optional[List[str]] = None) -> int:
                 errors.append(msg)
                 print(f"[ERROR] {msg}", file=sys.stderr)
                 (out_dir / f"{tag}.error.json").write_text(
-                    json.dumps({"tag": tag, "error": str(e), "sheet": sheet}, indent=2, default=str),
+                    json.dumps(
+                        {"tag": tag, "error": str(e), "sheet": sheet},
+                        indent=2,
+                        default=str,
+                    ),
                     encoding="utf-8",
                 )
 
